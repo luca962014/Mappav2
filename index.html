@@ -2,380 +2,197 @@
 <html lang="it">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Kingshot Planner Shared V2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
+<title>Kingshot Planner Shared V14</title>
 <style>
-  :root {
-    --bg:#0b1020;
-    --panel:#10192f;
-    --panel-2:#13213c;
-    --text:#edf2ff;
-    --muted:#b5c1da;
-    --line:rgba(255,255,255,.12);
-    --accent:#62d7d3;
-    --danger:#ff7b92;
-    --success:#6fd37c;
-    --shadow:0 20px 40px rgba(0,0,0,.28);
-  }
+  :root { --text:#eef2ff; --muted:#b8c1d8; --line:rgba(255,255,255,.09); }
   * { box-sizing:border-box; }
-  html, body { margin:0; min-height:100%; }
-  body {
-    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    color: var(--text);
-    background: linear-gradient(180deg, #0b1020 0%, #111a31 100%);
-  }
-  button, input, select, textarea {
-    font: inherit;
-    color: inherit;
-  }
-  .app {
-    min-height:100vh;
-    display:grid;
-    grid-template-columns: 360px 1fr;
-    gap:16px;
-    padding:16px;
-  }
-  .panel {
-    background: rgba(16,25,47,.95);
-    border:1px solid var(--line);
-    border-radius:20px;
-    padding:16px;
-    box-shadow: var(--shadow);
-  }
-  .map-wrap {
-    background: rgba(16,25,47,.66);
-    border:1px solid var(--line);
-    border-radius:20px;
-    padding:16px;
-    overflow:auto;
-    box-shadow: var(--shadow);
-  }
-  h1 { margin:0 0 8px; font-size:24px; }
-  h2 { margin:18px 0 8px; font-size:14px; color:#cbd7f2; text-transform:uppercase; letter-spacing:.08em; }
-  p { margin:0 0 10px; color:#dee7fb; line-height:1.45; }
-  .muted, .status, .hint { color:var(--muted); font-size:13px; }
-  .status { min-height:18px; margin-top:12px; }
-  .hint { margin-top:12px; }
-  .row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  .tool-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
-  .stack { display:grid; gap:8px; }
-  input, select, textarea, button {
-    width:100%;
-    padding:11px 12px;
-    border-radius:12px;
-    border:1px solid rgba(255,255,255,.14);
-    background:#0f172a;
-  }
-  textarea { min-height:120px; resize:vertical; }
-  button { cursor:pointer; background:#12203a; }
-  button:hover { background:#183055; }
-  button.active {
-    background: linear-gradient(180deg,#2a87ff 0%, #215fd7 100%);
-    border-color: rgba(255,255,255,.24);
-  }
-  button.secondary { background:#17253f; }
-  button.danger { background:#3a1623; border-color:rgba(255,123,146,.35); }
-  button.ghost { background:transparent; }
-  button:disabled { opacity:.5; cursor:not-allowed; }
-  .legend { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
-  .legend-item { display:flex; align-items:center; gap:8px; font-size:13px; color:#dce6fb; }
-  .swatch { width:14px; height:14px; border-radius:50%; border:1px solid rgba(255,255,255,.18); }
-  .board {
-    position:relative;
-    width:1110px;
-    height:1110px;
-    margin:0 auto;
-    border-radius:22px;
-    background:
-      linear-gradient(180deg,#8174dc 0%,#6a5dc7 100%);
-    overflow:hidden;
-  }
-  .board::before {
-    content:'';
-    position:absolute;
-    inset:0;
-    background:
-      linear-gradient(135deg, rgba(255,255,255,.14) 0, rgba(255,255,255,.14) 1px, transparent 1px, transparent 24px),
-      linear-gradient(45deg, rgba(255,255,255,.10) 0, rgba(255,255,255,.10) 1px, transparent 1px, transparent 24px);
-    background-size: 24px 24px;
-    opacity:.45;
-    pointer-events:none;
-  }
-  svg.grid {
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-  }
-  .items, .labels {
-    position:absolute;
-    inset:0;
-  }
-  .anchor {
-    position:absolute;
-    width:12px;
-    height:12px;
-    border-radius:50%;
-    transform:translate(-50%,-50%);
-    background:rgba(255,255,255,.28);
-    border:1px solid rgba(255,255,255,.28);
-    box-shadow:0 0 0 1px rgba(0,0,0,.08) inset;
-    cursor:pointer;
-  }
-  .anchor:hover { transform:translate(-50%,-50%) scale(1.2); }
-  .item {
-    position:absolute;
-    transform: translate(-50%, -50%);
-    user-select:none;
-    touch-action:none;
-    cursor:grab;
-    display:grid;
-    place-items:center;
-    filter: drop-shadow(0 8px 14px rgba(0,0,0,.28));
-  }
-  .item.dragging { cursor:grabbing; z-index:200; }
-  .item.selected { z-index:180; }
-  .item .name-pill {
-    position:absolute;
-    left:50%;
-    top:100%;
-    transform:translate(-50%, 6px);
-    min-width:34px;
-    max-width:92px;
-    padding:3px 7px;
-    border-radius:999px;
-    border:1px solid rgba(255,255,255,.16);
-    background:rgba(15,23,42,.76);
-    font-size:10px;
-    font-weight:800;
-    letter-spacing:.02em;
-    text-align:center;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-  .castle {
-    width:38px;
-    height:38px;
-  }
-  .castle svg { width:100%; height:100%; overflow:visible; }
-  .banner {
-    width:58px;
-    height:auto;
-  }
-  .hq {
-    width:96px;
-    height:auto;
-  }
-  .beartrap {
-    width:42px;
-    height:42px;
-  }
-  .selection-ring {
-    position:absolute;
-    inset:-8px;
-    border:2px solid rgba(255,255,255,.92);
-    border-radius:18px;
-    pointer-events:none;
-    box-shadow:0 0 0 4px rgba(34,197,94,.18);
-  }
-  .selection-ring.round { border-radius:999px; }
-  .inspector {
-    display:grid;
-    gap:8px;
-    padding:12px;
-    border:1px solid rgba(255,255,255,.1);
-    border-radius:14px;
-    background:rgba(255,255,255,.03);
-  }
-  .small { font-size:12px; color:var(--muted); }
-  .pillbar { display:flex; gap:8px; flex-wrap:wrap; }
-  .pill {
-    padding:6px 10px;
-    border-radius:999px;
-    background:rgba(255,255,255,.08);
-    border:1px solid rgba(255,255,255,.12);
-    font-size:12px;
-  }
-  @media (max-width: 980px) {
-    .app { grid-template-columns:1fr; }
-    .panel { order:2; }
-    .map-wrap { order:1; }
-  }
+  body { margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--text); background:linear-gradient(180deg,#0b1020 0%,#111827 100%); }
+  .app { min-height:100vh; display:grid; grid-template-columns:300px 1fr; gap:16px; padding:16px; }
+  .panel { background:rgba(17,24,39,.94); border:1px solid var(--line); border-radius:18px; padding:16px; }
+  h1 { margin:0 0 10px; font-size:22px; }
+  h2 { margin:16px 0 8px; font-size:15px; }
+  p { margin:0 0 10px; line-height:1.45; color:#dde5f2; }
+  .muted,.small { color:var(--muted); font-size:12px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  button, textarea, select, input[type="text"], input[type="password"] { width:100%; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:#0f172a; color:white; padding:10px 12px; font:inherit; }
+  button { cursor:pointer; }
+  button:hover { background:#16213a; }
+  button.active { outline:2px solid #f6b24a; background:#1b2847; }
+  button:disabled, input:disabled { opacity:.5; cursor:not-allowed; }
+  textarea { min-height:110px; resize:vertical; }
+  .controls { display:grid; gap:8px; margin-top:12px; }
+  .type-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+  .status { margin-top:10px; font-size:12px; color:var(--muted); min-height:18px; }
+  .map-wrap { background:rgba(31,41,55,.58); border:1px solid var(--line); border-radius:18px; padding:16px; overflow:auto; min-height:72vh; position:relative; touch-action:auto; }
+  .map-canvas { position:relative; width:780px; height:780px; }
+  .board { position:absolute; left:0; top:0; width:780px; height:780px; border-radius:18px; background:linear-gradient(180deg,#7c72d6 0%,#665bc8 100%); box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
+  .board::before { content:''; position:absolute; inset:0; border-radius:18px; background:linear-gradient(135deg, rgba(255,255,255,.14) 0, rgba(255,255,255,.14) 1px, transparent 1px, transparent 24px), linear-gradient(45deg, rgba(255,255,255,.09) 0, rgba(255,255,255,.09) 1px, transparent 1px, transparent 24px); background-size:24px 24px; opacity:.34; pointer-events:none; }
+  svg { position:absolute; inset:0; width:100%; height:100%; }
+  .labels { position:absolute; inset:0; pointer-events:none; }
+  .slot-name { position:absolute; transform:translate(-50%,-50%); max-width:78px; text-align:center; font-size:7px; font-weight:800; line-height:1.05; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 3px rgba(0,0,0,.55); }
+  .bt-asset { position:absolute; transform:translate(-50%,-50%); width:22px; height:22px; object-fit:contain; object-position:center; pointer-events:none; filter:drop-shadow(0 4px 8px rgba(0,0,0,.28)); }
+  .popup { position:absolute; display:none; z-index:10; transform:translate(-50%,-110%); background:rgba(15,23,42,.96); border:1px solid rgba(255,255,255,.14); border-radius:10px; padding:6px; gap:6px; min-width:138px; box-shadow:0 10px 25px rgba(0,0,0,.25); }
+  .popup.show { display:grid; }
+  .popup button { padding:7px 8px; font-size:12px; }
+  @media (max-width:980px) { .app { grid-template-columns:1fr; } .panel { order:2; } .map-wrap { order:1; min-height:58vh; } }
 </style>
 </head>
 <body>
 <div class="app">
   <aside class="panel">
-    <h1>Kingshot Planner Shared V2</h1>
-    <p>Versione nuova separata dalla mappa attuale. Castelli, stendardi, HQ e Bear Trap sono oggetti indipendenti, trascinabili e salvati online.</p>
-    <p class="muted">Flusso consigliato: scegli il tipo oggetto, clicca sulla griglia per aggiungerlo, poi trascinalo dove vuoi. Ogni oggetto resta legato alla casella più vicina ma puoi rifinirne la posizione con un offset libero.</p>
+    <h1>Kingshot Planner Shared V14</h1>
+    <p>Interfaccia semplificata: scelta colore rimossa del tutto, così restano solo i controlli utili e non compare più un menu non funzionante.</p>
 
     <h2>Accesso</h2>
-    <div class="stack">
-      <input id="editorKey" type="password" placeholder="Editor key opzionale" />
+    <input id="editorKey" type="password" placeholder="Editor key opzionale" />
+
+    <h2>Tipo oggetto</h2>
+    <div class="type-grid">
+      <button data-type="city" class="type-btn active">Città 2x2</button>
+      <button data-type="hq" class="type-btn">HQ 2x2</button>
+      <button data-type="banner" class="type-btn">Stendardo 1x1</button>
+      <button data-type="empty" class="type-btn">Slot vuoto 1x1</button>
+      <button data-type="bt" class="type-btn">Bear Trap 3x3</button>
     </div>
 
-    <h2>Nuovo oggetto</h2>
-    <div class="tool-grid" id="toolButtons">
-      <button data-tool="castle" class="active">Castello</button>
-      <button data-tool="banner">Stendardo</button>
-      <button data-tool="hq">HQ</button>
-      <button data-tool="beartrap">Bear Trap</button>
+    <h2>Impostazioni</h2>
+    <div class="grid2">
+      <input id="nextName" type="text" maxlength="16" placeholder="Nome slot" value="C01" />
+    </div>
+    <div class="small" id="placementInfo">Piazzamento attivo: Città 2x2.</div>
+
+    <h2>Slot selezionato</h2>
+    <div class="small" id="selectedInfo">Nessuno slot selezionato.</div>
+    <div class="controls">
+      <input id="selectedName" type="text" maxlength="16" placeholder="Nome città selezionata" disabled />
+      <button id="cancelMove" disabled>Annulla spostamento</button>
     </div>
 
-    <div class="stack" style="margin-top:8px;">
-      <div class="row">
-        <input id="nextName" type="text" maxlength="14" placeholder="Nome / etichetta" value="C01" />
-        <select id="nextColor">
-          <option value="cyan">Ciano</option>
-          <option value="green">Verde</option>
-          <option value="pink">Rosa</option>
-          <option value="orange">Arancio</option>
-          <option value="purple">Viola</option>
-        </select>
-      </div>
-      <button id="toggleAdd" class="secondary">Modalità aggiunta: attiva</button>
-    </div>
-
-    <h2>Oggetto selezionato</h2>
-    <div class="inspector">
-      <div class="small" id="selectedType">Nessun oggetto selezionato.</div>
-      <input id="selectedName" type="text" maxlength="14" placeholder="Nome selezionato" disabled />
-      <select id="selectedColor" disabled>
-        <option value="cyan">Ciano</option>
-        <option value="green">Verde</option>
-        <option value="pink">Rosa</option>
-        <option value="orange">Arancio</option>
-        <option value="purple">Viola</option>
-      </select>
-      <div class="row">
-        <button id="resetOffset" class="ghost" disabled>Reset offset</button>
-        <button id="deleteSelected" class="danger" disabled>Cancella</button>
-      </div>
-    </div>
-
-    <h2>Legenda</h2>
-    <div class="legend">
-      <div class="legend-item"><span class="swatch" style="background:#5ad6d1"></span>Castelli clan</div>
-      <div class="legend-item"><span class="swatch" style="background:#89d64e"></span>Linea / supporto</div>
-      <div class="legend-item"><span class="swatch" style="background:#ff92ca"></span>Rally</div>
-      <div class="legend-item"><span class="swatch" style="background:#f6b24a"></span>Marker speciali</div>
-    </div>
-
-    <h2>Azioni</h2>
-    <div class="stack">
+    <div class="controls">
       <button id="saveNow">Salva online</button>
-      <button id="reloadBtn" class="secondary">Ricarica dal server</button>
-      <button id="exportJson" class="secondary">Esporta JSON</button>
-      <button id="clearAll" class="danger">Svuota mappa</button>
-      <textarea id="jsonBox" placeholder="Export JSON"></textarea>
+      <button id="clearAll">Svuota mappa</button>
+      <button id="reloadBtn">Ricarica dal server</button>
+      <button id="exportJson">Esporta JSON</button>
+      <textarea id="jsonBox" placeholder="Export JSON del layout condiviso"></textarea>
     </div>
 
     <div class="status" id="status"></div>
-    <div class="hint">Tip: puoi mettere più elementi nella stessa zona, trascinarli e poi usare Reset offset se vuoi riallinearli al centro della casella.</div>
   </aside>
 
-  <main class="map-wrap">
-    <div class="board" id="board">
-      <svg class="grid" id="grid" viewBox="0 0 1110 1110" aria-label="Mappa Kingshot"></svg>
-      <div class="items" id="items"></div>
-      <div class="labels" id="anchors"></div>
+  <main class="map-wrap" id="mapWrap">
+    <div class="map-canvas" id="mapCanvas">
+      <div class="board" id="board">
+        <svg id="svg" viewBox="0 0 1020 1020"></svg>
+        <div class="labels" id="labels"></div>
+        <div class="popup" id="popup">
+          <button id="moveBtn">Sposta</button>
+          <button id="deleteBtn">Cancella</button>
+        </div>
+      </div>
     </div>
   </main>
 </div>
-
 <script>
+const DEMO_MODE = false;
+const DEMO_STATE = {"slots": [], "updatedAt": null};
+const HQ_SRC = './assets/hq-castle.png';
+const BANNER_SRC = './assets/banner-flag.png';
+const BEAR_SRC = './assets/bear-icon.png';
 const UNIT = 30;
 const HALF = UNIT / 2;
-const OFF_X = 555;
-const OFF_Y = 105;
+const OFF_X = 510;
+const OFF_Y = 120;
 const GRID_MIN = 0;
-const GRID_MAX = 30;
-const AUTO_REFRESH_MS = 5000;
+const GRID_MAX = 26;
+const MAIN_BT = { x: 12, y: 12, size: 3 };
+const BOARD_VIEW = 1020;
 const palette = { cyan:'#5ad6d1', green:'#89d64e', pink:'#ff92ca', orange:'#f6b24a', purple:'#a98bf6' };
-const typeMeta = {
-  castle: { label:'Castello', size:38, defaultName:'C', layer:20 },
-  banner: { label:'Stendardo', size:58, defaultName:'STD', layer:10 },
-  hq: { label:'HQ', size:96, defaultName:'HQ', layer:30 },
-  beartrap: { label:'Bear Trap', size:42, defaultName:'BT', layer:25 }
-};
-
+const typeLabels = { city:'Città 2x2', hq:'HQ 2x2', banner:'Stendardo 1x1', empty:'Slot vuoto 1x1', bt:'Bear Trap 3x3' };
+const svg = document.getElementById('svg');
+const labels = document.getElementById('labels');
 const board = document.getElementById('board');
-const grid = document.getElementById('grid');
-const itemsLayer = document.getElementById('items');
-const anchorsLayer = document.getElementById('anchors');
-const editorKey = document.getElementById('editorKey');
-const nextName = document.getElementById('nextName');
-const nextColor = document.getElementById('nextColor');
-const jsonBox = document.getElementById('jsonBox');
-const statusBox = document.getElementById('status');
-const toolButtons = [...document.querySelectorAll('[data-tool]')];
-const toggleAddBtn = document.getElementById('toggleAdd');
-const selectedTypeBox = document.getElementById('selectedType');
-const selectedNameInput = document.getElementById('selectedName');
-const selectedColorSelect = document.getElementById('selectedColor');
-const resetOffsetBtn = document.getElementById('resetOffset');
-const deleteSelectedBtn = document.getElementById('deleteSelected');
+const mapWrap = document.getElementById('mapWrap');
+const popup = document.getElementById('popup');
+const moveBtn = document.getElementById('moveBtn');
+const deleteBtn = document.getElementById('deleteBtn');
+const cancelMoveBtn = document.getElementById('cancelMove');
 const saveNowBtn = document.getElementById('saveNow');
 const reloadBtn = document.getElementById('reloadBtn');
-const exportBtn = document.getElementById('exportJson');
 const clearAllBtn = document.getElementById('clearAll');
-
-let state = { items: [], updatedAt: null };
+const jsonBox = document.getElementById('jsonBox');
+const nextName = document.getElementById('nextName');
+const placementInfo = document.getElementById('placementInfo');
+const statusBox = document.getElementById('status');
+const editorKey = document.getElementById('editorKey');
+const selectedInfo = document.getElementById('selectedInfo');
+const selectedName = document.getElementById('selectedName');
+let activeType = 'city';
 let selectedId = null;
-let currentTool = 'castle';
-let addMode = true;
+let moveMode = false;
+let state = { slots: [], updatedAt: null };
 let dirty = false;
 let isSaving = false;
-let dragState = null;
-let lastLoadedAt = null;
+let initialCentered = false;
 
-function setStatus(text='') { statusBox.textContent = text; }
+function project(gx, gy) { return { x: (gx - gy) * HALF + OFF_X, y: (gx + gy) * HALF + OFF_Y }; }
+function diamondPoints(cx, cy, span) { return `${cx},${cy - span} ${cx + span},${cy} ${cx},${cy + span} ${cx - span},${cy}`; }
+function sizeForType(type) { return type === 'city' || type === 'hq' ? 2 : type === 'bt' ? 3 : 1; }
+function footprint(slot) {
+  const size = sizeForType(slot.type);
+  const cells = [];
+  for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) cells.push([slot.x + dx, slot.y + dy]);
+  return cells;
+}
+function slotCenter(slot) {
+  const size = sizeForType(slot.type);
+  const anchor = project(slot.x, slot.y);
+  return { x: anchor.x, y: anchor.y + (size - 1) * HALF };
+}
+function cellPolygon(gx, gy, fill, stroke, width=1) {
+  const p = project(gx, gy);
+  const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  poly.setAttribute('points', diamondPoints(p.x, p.y, HALF));
+  poly.setAttribute('fill', fill);
+  poly.setAttribute('stroke', stroke);
+  poly.setAttribute('stroke-width', width);
+  return poly;
+}
+function protectedMainBT(x, y) { return x >= MAIN_BT.x && x < MAIN_BT.x + MAIN_BT.size && y >= MAIN_BT.y && y < MAIN_BT.y + MAIN_BT.size; }
+function slotBlocksCell(slot, x, y) { return footprint(slot).some(([sx,sy]) => sx === x && sy === y); }
+function occupiedByOther(x, y, ignoreId=null) { return state.slots.some(slot => slot.id !== ignoreId && slotBlocksCell(slot, x, y)); }
+function canPlaceType(type, x, y, ignoreId=null) {
+  const size = sizeForType(type);
+  const cells = [];
+  for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) cells.push([x + dx, y + dy]);
+  return cells.every(([cx,cy]) => cx >= GRID_MIN && cy >= GRID_MIN && cx <= GRID_MAX && cy <= GRID_MAX && !protectedMainBT(cx,cy) && !occupiedByOther(cx,cy,ignoreId));
+}
+function nextAutoName() { return `C${String(state.slots.filter(s => s.type === 'city').length + 1).padStart(2,'0')}`; }
+function defaultNameFor(type) { if (type === 'city') return nextAutoName(); if (type === 'hq') return 'HQ'; if (type === 'bt') return 'BT'; return ''; }
+function getSelected() { return state.slots.find(s => s.id === selectedId) || null; }
+function setStatus(t='') { statusBox.textContent = t; }
+function hidePopup() { popup.classList.remove('show'); }
+function clearSelection() { selectedId = null; hidePopup(); updateInspector(); }
 function markDirty() { dirty = true; }
-function uid() { return Date.now() + Math.floor(Math.random() * 100000); }
-function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-function project(gx, gy) { return { x:(gx - gy) * HALF + OFF_X, y:(gx + gy) * HALF + OFF_Y }; }
-function inverse(px, py) {
-  const a = (px - OFF_X) / HALF;
-  const b = (py - OFF_Y) / HALF;
-  return { gx:(a + b) / 2, gy:(b - a) / 2 };
-}
-function nearestCell(px, py) {
-  const inv = inverse(px, py);
-  return { gx: clamp(Math.round(inv.gx), GRID_MIN, GRID_MAX), gy: clamp(Math.round(inv.gy), GRID_MIN, GRID_MAX) };
-}
-function getItem(id = selectedId) { return state.items.find(item => item.id === id) || null; }
 function normalize(remote) {
-  if (!remote || typeof remote !== 'object') return { items: [], updatedAt: null };
-  if (Array.isArray(remote.items)) {
-    return {
-      items: remote.items.map(item => ({
-        id: item.id || uid(),
-        type: typeMeta[item.type] ? item.type : 'castle',
-        gx: clamp(Number.isFinite(item.gx) ? item.gx : 15, GRID_MIN, GRID_MAX),
-        gy: clamp(Number.isFinite(item.gy) ? item.gy : 15, GRID_MIN, GRID_MAX),
-        offsetX: Number.isFinite(item.offsetX) ? item.offsetX : 0,
-        offsetY: Number.isFinite(item.offsetY) ? item.offsetY : 0,
-        name: (item.name || '').toString().slice(0, 14),
-        color: palette[item.color] ? item.color : 'cyan'
-      })),
-      updatedAt: remote.updatedAt || null
-    };
+  const slots = Array.isArray(remote?.slots) ? remote.slots : [];
+  return { slots: slots.map(s => ({ id: s.id || Date.now()+Math.floor(Math.random()*9999), x:+s.x||0, y:+s.y||0, type:['city','hq','banner','empty','bt'].includes(s.type)?s.type:'city', name:(s.name||'').toString().slice(0,16), color: palette[s.color] ? s.color : 'cyan' })), updatedAt: remote?.updatedAt || null };
+}
+function updatePlacementInfo() {
+  placementInfo.textContent = `Piazzamento attivo: ${typeLabels[activeType]}.`;
+}
+
+function updateInspector() {
+  const slot = getSelected();
+  if (!slot) {
+    selectedInfo.textContent = 'Nessuno slot selezionato.';
+    selectedName.value = '';
+    selectedName.disabled = true;
+    return;
   }
-  return { items: [], updatedAt: remote.updatedAt || null };
-}
-function nextAutoName() {
-  const castles = state.items.filter(item => item.type === 'castle').length + 1;
-  return `C${String(castles).padStart(2, '0')}`;
-}
-function cellCenter(item) {
-  const p = project(item.gx, item.gy);
-  return { x: p.x + item.offsetX, y: p.y + item.offsetY };
-}
-function itemLabel(item) {
-  if (item.name && item.name.trim()) return item.name.trim();
-  return typeMeta[item.type]?.defaultName || item.type;
+  selectedInfo.textContent = `${typeLabels[slot.type]} · ${slot.x},${slot.y}`;
+  selectedName.value = slot.name || '';
+  selectedName.disabled = false;
 }
 
 async function apiLoad() {
@@ -384,355 +201,208 @@ async function apiLoad() {
   return normalize(await res.json());
 }
 async function apiSave() {
+  if (DEMO_MODE) { setStatus('Questa è solo la preview locale.'); return; }
   if (isSaving) return;
   isSaving = true;
   try {
-    const payload = { items: state.items, updatedAt: state.updatedAt };
-    const res = await fetch('/.netlify/functions/layout', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'x-editor-key': editorKey.value || '' },
-      body: JSON.stringify(payload)
-    });
+    const res = await fetch('/.netlify/functions/layout', { method:'POST', headers:{ 'Content-Type':'application/json', 'x-editor-key': editorKey.value || '' }, body: JSON.stringify(state) });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Errore salvataggio');
-    state = normalize(data);
-    dirty = false;
-    lastLoadedAt = state.updatedAt;
-    setStatus('Salvato online.');
-    if (currentTool === 'castle') nextName.value = nextAutoName();
-    redraw();
-  } catch (err) {
-    setStatus(err.message || 'Errore salvataggio');
-  } finally {
-    isSaving = false;
-  }
+    state = normalize(data); dirty = false; redraw(false); setStatus('Salvato online.');
+  } catch (e) { setStatus(e.message || 'Errore salvataggio'); } finally { isSaving = false; }
 }
-async function loadFromServer(silent = false) {
+async function loadFromServer(silent=false) {
+  if (DEMO_MODE) {
+    state = normalize(DEMO_STATE); nextName.value = defaultNameFor(activeType); redraw(true); if (!silent) setStatus('Preview locale caricata.'); return;
+  }
   try {
     const remote = await apiLoad();
-    if (!dirty || remote.updatedAt !== state.updatedAt) {
-      state = remote;
-      lastLoadedAt = remote.updatedAt;
-      if (currentTool === 'castle') nextName.value = nextAutoName();
-      if (!silent) setStatus(remote.updatedAt ? `Mappa aggiornata: ${new Date(remote.updatedAt).toLocaleString('it-IT')}` : 'Mappa caricata dal server.');
-      redraw();
-    }
-  } catch (err) {
-    if (!silent) setStatus('Errore nel caricamento dal server.');
+    if (!dirty || remote.updatedAt !== state.updatedAt) { state = remote; nextName.value = defaultNameFor(activeType); redraw(true); if (!silent) setStatus('Mappa aggiornata dal server.'); }
+  } catch (e) { if (!silent) setStatus('Errore nel caricamento dal server.'); }
+}
+function centerView() {
+  const left = Math.max(0, (board.clientWidth - mapWrap.clientWidth) / 2);
+  const top = Math.max(0, (board.clientHeight - mapWrap.clientHeight) / 2);
+  mapWrap.scrollLeft = left;
+  mapWrap.scrollTop = top;
+}
+function showPopupFor(slot) {
+  const c = slotCenter(slot);
+  popup.style.left = `${(c.x/BOARD_VIEW)*board.clientWidth}px`;
+  popup.style.top = `${(c.y/BOARD_VIEW)*board.clientHeight - 30}px`;
+  popup.classList.add('show');
+}
+function startMove() {
+  if (!selectedId) return;
+  moveMode = true; cancelMoveBtn.disabled = false; hidePopup();
+  const slot = getSelected();
+  if (slot) setStatus(`Spostamento attivo: scegli una casella valida per ${slot.name || typeLabels[slot.type]}.`);
+}
+function cancelMove() { moveMode = false; cancelMoveBtn.disabled = true; }
+function deleteSelected() {
+  if (!selectedId) return;
+  state.slots = state.slots.filter(s => s.id !== selectedId); clearSelection(); cancelMove(); markDirty(); redraw(false);
+}
+function createSlotAt(x, y) {
+  const type = activeType;
+  if (!canPlaceType(type, x, y)) return;
+  const slot = { id: Date.now()+Math.floor(Math.random()*1000), x, y, type, name: (nextName.value || defaultNameFor(type)).trim().slice(0,16), color: 'cyan' };
+  state.slots.push(slot);
+  nextName.value = defaultNameFor(type);
+  markDirty();
+  redraw(false);
+}
+function handleAnchorClick(x, y) {
+  if (moveMode && selectedId) {
+    const current = getSelected();
+    if (!current) return;
+    if (!canPlaceType(current.type, x, y, current.id)) { setStatus('Posizione non valida.'); return; }
+    current.x = x; current.y = y; markDirty(); cancelMove(); clearSelection(); redraw(false); return;
   }
-}
-
-function updateToolButtons() {
-  toolButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.tool === currentTool));
-  toggleAddBtn.textContent = `Modalità aggiunta: ${addMode ? 'attiva' : 'disattiva'}`;
-}
-function updateInspector() {
-  const item = getItem();
-  if (!item) {
-    selectedTypeBox.textContent = 'Nessun oggetto selezionato.';
-    selectedNameInput.value = '';
-    selectedColorSelect.value = 'cyan';
-    selectedNameInput.disabled = true;
-    selectedColorSelect.disabled = true;
-    resetOffsetBtn.disabled = true;
-    deleteSelectedBtn.disabled = true;
-    return;
-  }
-  selectedTypeBox.textContent = `${typeMeta[item.type].label} · cella ${item.gx},${item.gy} · offset ${Math.round(item.offsetX)}, ${Math.round(item.offsetY)}`;
-  selectedNameInput.value = item.name || '';
-  selectedColorSelect.value = item.color || 'cyan';
-  selectedNameInput.disabled = false;
-  selectedColorSelect.disabled = item.type === 'beartrap';
-  resetOffsetBtn.disabled = false;
-  deleteSelectedBtn.disabled = false;
-}
-function selectItem(id) {
-  selectedId = id;
-  redraw();
-}
-function clearSelection() {
-  selectedId = null;
-  redraw();
-}
-
-function createCastleSVG(color) {
-  return `
-  <svg viewBox="0 0 64 64" aria-hidden="true">
-    <defs>
-      <linearGradient id="fill-${color}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${color}"/>
-        <stop offset="100%" stop-color="#16325a"/>
-      </linearGradient>
-    </defs>
-    <path d="M32 4 58 20 32 36 6 20 32 4Z" fill="url(#fill-${color})" opacity=".38"/>
-    <path d="M16 20h32v18H16z" fill="${color}" stroke="rgba(7,16,32,.75)" stroke-width="2" rx="3"/>
-    <path d="M20 16h6v6h-6zM29 16h6v6h-6zM38 16h6v6h-6z" fill="#dbeafe" opacity=".9"/>
-    <path d="M28 24h8v14h-8z" fill="#0f172a" opacity=".65"/>
-    <path d="M16 38h32l-4 10H20l-4-10Z" fill="#23375d" opacity=".92"/>
-    <path d="M18 22h28" stroke="rgba(255,255,255,.36)" stroke-width="2"/>
-  </svg>`;
-}
-function createBearTrapSVG() {
-  return `
-  <svg viewBox="0 0 64 64" aria-hidden="true">
-    <circle cx="32" cy="32" r="27" fill="#101827" stroke="#f6b24a" stroke-width="4"/>
-    <path d="M18 32c4-12 24-12 28 0" stroke="#f6b24a" stroke-width="4" fill="none" stroke-linecap="round"/>
-    <path d="M18 34c4 12 24 12 28 0" stroke="#f6b24a" stroke-width="4" fill="none" stroke-linecap="round"/>
-    <circle cx="32" cy="32" r="6" fill="#f6b24a"/>
-  </svg>`;
-}
-function createItemElement(item) {
-  const el = document.createElement('div');
-  el.className = `item ${item.type}` + (item.id === selectedId ? ' selected' : '');
-  const center = cellCenter(item);
-  el.style.left = `${center.x}px`;
-  el.style.top = `${center.y}px`;
-  el.style.zIndex = String((typeMeta[item.type]?.layer || 20) + (item.id === selectedId ? 100 : 0));
-  el.dataset.id = item.id;
-
-  if (item.type === 'castle') {
-    el.innerHTML = createCastleSVG(palette[item.color] || palette.cyan);
-  } else if (item.type === 'banner') {
-    const img = document.createElement('img');
-    img.src = './assets/banner.png';
-    img.alt = 'Stendardo';
-    img.className = 'banner';
-    img.draggable = false;
-    el.appendChild(img);
-  } else if (item.type === 'hq') {
-    const img = document.createElement('img');
-    img.src = './assets/hq.png';
-    img.alt = 'HQ';
-    img.className = 'hq';
-    img.draggable = false;
-    el.appendChild(img);
-  } else {
-    el.innerHTML = createBearTrapSVG();
-  }
-
-  const label = document.createElement('div');
-  label.className = 'name-pill';
-  label.textContent = itemLabel(item);
-  el.appendChild(label);
-
-  const ring = document.createElement('div');
-  ring.className = 'selection-ring' + ((item.type === 'banner' || item.type === 'beartrap') ? ' round' : '');
-  ring.style.display = item.id === selectedId ? 'block' : 'none';
-  el.appendChild(ring);
-
-  el.addEventListener('pointerdown', onItemPointerDown);
-  el.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (!dragState) selectItem(item.id);
-  });
-  return el;
-}
-function renderItems() {
-  itemsLayer.innerHTML = '';
-  [...state.items].sort((a,b) => (typeMeta[a.type].layer - typeMeta[b.type].layer)).forEach(item => itemsLayer.appendChild(createItemElement(item)));
+  createSlotAt(x, y);
 }
 function renderGrid() {
-  grid.innerHTML = '';
-  const ns = 'http://www.w3.org/2000/svg';
-  const g = document.createElementNS(ns, 'g');
-  for (let gy = GRID_MIN; gy <= GRID_MAX; gy++) {
-    for (let gx = GRID_MIN; gx <= GRID_MAX; gx++) {
-      const p = project(gx, gy);
-      const poly = document.createElementNS(ns, 'polygon');
-      poly.setAttribute('points', `${p.x},${p.y - HALF} ${p.x + HALF},${p.y} ${p.x},${p.y + HALF} ${p.x - HALF},${p.y}`);
-      poly.setAttribute('fill', 'rgba(255,255,255,.05)');
-      poly.setAttribute('stroke', 'rgba(255,255,255,.12)');
-      poly.setAttribute('stroke-width', '.9');
-      g.appendChild(poly);
-    }
-  }
-  grid.appendChild(g);
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  for (let y = GRID_MIN; y <= GRID_MAX; y++) for (let x = GRID_MIN; x <= GRID_MAX; x++) g.appendChild(cellPolygon(x, y, 'rgba(255,255,255,.045)', 'rgba(255,255,255,.14)', .8));
+  svg.appendChild(g);
 }
 function renderAnchors() {
-  anchorsLayer.innerHTML = '';
-  for (let gy = GRID_MIN; gy <= GRID_MAX; gy++) {
-    for (let gx = GRID_MIN; gx <= GRID_MAX; gx++) {
-      const p = project(gx, gy);
-      const dot = document.createElement('button');
-      dot.className = 'anchor';
-      dot.style.left = `${p.x}px`;
-      dot.style.top = `${p.y}px`;
-      dot.title = `Aggiungi su ${gx},${gy}`;
-      dot.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (!addMode) return;
-        addItemAt(gx, gy);
-      });
-      anchorsLayer.appendChild(dot);
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  for (let y = GRID_MIN; y <= GRID_MAX; y++) {
+    for (let x = GRID_MIN; x <= GRID_MAX; x++) {
+      if (protectedMainBT(x,y)) continue;
+      const type = moveMode && selectedId ? getSelected()?.type || activeType : activeType;
+      const allowed = canPlaceType(type, x, y, moveMode ? selectedId : null);
+      const c = project(x, y);
+      const hit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      hit.setAttribute('cx', c.x); hit.setAttribute('cy', c.y); hit.setAttribute('r', allowed ? 4.6 : 3.1);
+      hit.setAttribute('fill', allowed ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.08)');
+      hit.setAttribute('stroke', allowed ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.05)');
+      hit.setAttribute('stroke-width', '1');
+      hit.style.cursor = allowed ? 'pointer' : 'default';
+      if (allowed) hit.addEventListener('click', () => handleAnchorClick(x, y));
+      g.appendChild(hit);
     }
   }
+  svg.appendChild(g);
 }
-function redraw() {
-  renderGrid();
-  renderAnchors();
-  renderItems();
-  updateInspector();
+function addText(cls, x, y, text) {
+  const d = document.createElement('div'); d.className = cls; d.textContent = text;
+  d.style.left = `${(x/BOARD_VIEW)*board.clientWidth}px`; d.style.top = `${(y/BOARD_VIEW)*board.clientHeight}px`; labels.appendChild(d);
 }
-
-function createNewItem(gx, gy) {
-  const type = currentTool;
-  const baseName = (nextName.value || '').trim().slice(0, 14);
-  let name = '';
-  if (type === 'castle') name = baseName || nextAutoName();
-  if (type === 'banner') name = baseName || 'STD';
-  if (type === 'hq') name = baseName || 'HQ';
-  if (type === 'beartrap') name = baseName || 'BT';
-  return {
-    id: uid(),
-    type,
-    gx,
-    gy,
-    offsetX: 0,
-    offsetY: 0,
-    name,
-    color: nextColor.value || 'cyan'
-  };
+function addImage(cls, x, y, src, w=40, h=40) {
+  const img = document.createElement('img');
+  img.className = cls;
+  img.src = src;
+  img.style.left = `${(x/BOARD_VIEW)*board.clientWidth}px`;
+  img.style.top = `${(y/BOARD_VIEW)*board.clientHeight}px`;
+  img.style.width = `${w}px`;
+  img.style.height = `${h}px`;
+  labels.appendChild(img);
 }
-function addItemAt(gx, gy) {
-  const item = createNewItem(gx, gy);
-  state.items.push(item);
-  markDirty();
-  selectItem(item.id);
-  if (currentTool === 'castle') nextName.value = nextAutoName();
-  setStatus(`${typeMeta[item.type].label} aggiunto in ${gx},${gy}.`);
+function renderCompositeCells(slot, fill, stroke) {
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  footprint(slot).forEach(([x,y]) => g.appendChild(cellPolygon(x, y, fill, stroke, 1.05)));
+  return g;
 }
-
-function boardPointFromEvent(e) {
-  const rect = board.getBoundingClientRect();
-  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+function renderSlotShape(slot) {
+  if (slot.type === 'city') return renderCompositeCells(slot, palette[slot.color] || palette.cyan, 'rgba(0,0,0,.34)');
+  if (slot.type === 'hq') return renderCompositeCells(slot, 'rgba(90,214,209,.20)', 'rgba(0,0,0,.30)');
+  if (slot.type === 'bt') return renderCompositeCells(slot, '#111827', 'rgba(255,255,255,.14)');
+  if (slot.type === 'empty') return cellPolygon(slot.x, slot.y, 'rgba(169,139,246,.28)', 'rgba(255,255,255,.20)', 1.1);
+  return cellPolygon(slot.x, slot.y, 'rgba(90,214,209,.18)', 'rgba(0,0,0,.28)', 1);
 }
-function onItemPointerDown(e) {
-  e.stopPropagation();
-  const id = Number(e.currentTarget.dataset.id);
-  const item = getItem(id);
-  if (!item) return;
-  selectItem(id);
-  const pos = boardPointFromEvent(e);
-  const center = cellCenter(item);
-  dragState = {
-    id,
-    pointerOffsetX: pos.x - center.x,
-    pointerOffsetY: pos.y - center.y,
-    moved: false
-  };
-  e.currentTarget.classList.add('dragging');
-  e.currentTarget.setPointerCapture(e.pointerId);
+function renderSlotOutline(slot, c) {
+  const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  poly.setAttribute('points', diamondPoints(c.x, c.y, sizeForType(slot.type) * HALF));
+  poly.setAttribute('fill', 'none');
+  poly.setAttribute('stroke', slot.id === selectedId ? 'rgba(255,255,255,.96)' : 'rgba(0,0,0,.45)');
+  poly.setAttribute('stroke-width', slot.id === selectedId ? 3 : 1.3);
+  return poly;
 }
-function onPointerMove(e) {
-  if (!dragState) return;
-  const item = getItem(dragState.id);
-  if (!item) return;
-  const point = boardPointFromEvent(e);
-  const targetX = clamp(point.x - dragState.pointerOffsetX, 20, 1090);
-  const targetY = clamp(point.y - dragState.pointerOffsetY, 20, 1090);
-  const cell = nearestCell(targetX, targetY);
-  const anchor = project(cell.gx, cell.gy);
-  item.gx = cell.gx;
-  item.gy = cell.gy;
-  item.offsetX = clamp(targetX - anchor.x, -26, 26);
-  item.offsetY = clamp(targetY - anchor.y, -26, 26);
-  dragState.moved = true;
-  markDirty();
-  redraw();
-}
-function onPointerUp(e) {
-  if (!dragState) return;
-  const el = itemsLayer.querySelector(`[data-id="${dragState.id}"]`);
-  if (el) el.classList.remove('dragging');
-  const item = getItem(dragState.id);
-  if (item && dragState.moved) {
-    setStatus(`${typeMeta[item.type].label} spostato in ${item.gx},${item.gy}.`);
+function renderSlotOverlay(slot, c) {
+  if (slot.type === 'hq' || slot.type === 'banner') {
+    const img = document.createElement('img');
+    img.src = slot.type === 'hq' ? HQ_SRC : BANNER_SRC;
+    img.alt = slot.type === 'hq' ? 'HQ' : 'Stendardo';
+    img.style.position = 'absolute';
+    img.style.pointerEvents = 'none';
+    img.style.left = `${(c.x/BOARD_VIEW)*board.clientWidth}px`;
+    img.style.top = `${(c.y/BOARD_VIEW)*board.clientHeight}px`;
+    img.style.transform = slot.type === 'hq' ? 'translate(-50%, -60%)' : 'translate(-50%, -62%)';
+    img.style.width = slot.type === 'hq' ? '42px' : '10px';
+    img.style.filter = 'drop-shadow(0 8px 14px rgba(0,0,0,.24))';
+    labels.appendChild(img);
+    return;
   }
-  dragState = null;
-  redraw();
+  if (slot.type === 'bt') {
+    renderBTRichOverlay(c);
+  }
+}
+function renderLabels(slot, c) {
+  if (slot.type === 'bt') return;
+  if (slot.name) addText('slot-name', c.x, c.y - 1, slot.name);
 }
 
-selectedNameInput.addEventListener('input', (e) => {
-  const item = getItem();
-  if (!item) return;
-  item.name = e.target.value.slice(0, 14);
-  markDirty();
-  redraw();
-});
-selectedColorSelect.addEventListener('change', (e) => {
-  const item = getItem();
-  if (!item) return;
-  item.color = e.target.value;
-  markDirty();
-  redraw();
-});
-resetOffsetBtn.addEventListener('click', () => {
-  const item = getItem();
-  if (!item) return;
-  item.offsetX = 0;
-  item.offsetY = 0;
-  markDirty();
-  redraw();
-});
-deleteSelectedBtn.addEventListener('click', () => {
-  if (!selectedId) return;
-  state.items = state.items.filter(item => item.id !== selectedId);
-  selectedId = null;
-  markDirty();
-  redraw();
-});
+function renderBTRichOverlay(c) {
+  addImage('bt-asset', c.x, c.y - 4, BEAR_SRC, 22, 22);
+  addText('slot-name', c.x, c.y + 16, 'BT');
+}
+function renderMainBearTrap() {
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  for (let yy=0; yy<MAIN_BT.size; yy++) for (let xx=0; xx<MAIN_BT.size; xx++) g.appendChild(cellPolygon(MAIN_BT.x+xx, MAIN_BT.y+yy, '#111827', 'rgba(255,255,255,.14)', 1.2));
+  const slot = { type:'bt', x:MAIN_BT.x, y:MAIN_BT.y };
+  const c = slotCenter(slot);
+  const outline = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  outline.setAttribute('points', diamondPoints(c.x, c.y, 3 * HALF));
+  outline.setAttribute('fill', 'none'); outline.setAttribute('stroke', 'rgba(255,255,255,.25)'); outline.setAttribute('stroke-width', 2); g.appendChild(outline);
+  svg.appendChild(g);
+}
+function renderSlots() {
+  labels.innerHTML = '';
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  state.slots.forEach(slot => {
+    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    group.style.cursor = 'pointer';
+    group.appendChild(renderSlotShape(slot));
+    const c = slotCenter(slot);
+    group.appendChild(renderSlotOutline(slot, c));
+    group.addEventListener('click', (e) => { e.stopPropagation(); selectedId = slot.id; moveMode = false; cancelMoveBtn.disabled = true; redraw(false); setStatus(`Selezionato: ${slot.name || typeLabels[slot.type]}.`); });
+    g.appendChild(group);
+    renderSlotOverlay(slot, c);
+    renderLabels(slot, c);
+  });
+  svg.appendChild(g);
+  const selected = getSelected(); if (selected) showPopupFor(selected); else hidePopup();
+}
+function redraw(forceCenter) {
+  svg.innerHTML = '';
+  labels.innerHTML = '';
+  renderGrid(); renderAnchors(); renderMainBearTrap(); renderSlots();
+  const defaultBTCenter = slotCenter({ type:'bt', x:MAIN_BT.x, y:MAIN_BT.y });
+  renderBTRichOverlay(defaultBTCenter);
+  updateInspector(); updatePlacementInfo();
+  if (forceCenter || !initialCentered) { requestAnimationFrame(() => { centerView(); initialCentered = true; }); }
+}
 
-board.addEventListener('click', (e) => {
-  if (e.target !== board && e.target !== itemsLayer && e.target !== grid) return;
-  const point = boardPointFromEvent(e);
-  const cell = nearestCell(point.x, point.y);
-  if (addMode) {
-    addItemAt(cell.gx, cell.gy);
-  } else {
-    clearSelection();
-  }
-});
-board.addEventListener('pointermove', onPointerMove);
-board.addEventListener('pointerup', onPointerUp);
-board.addEventListener('pointercancel', onPointerUp);
-board.addEventListener('pointerleave', (e) => { if (dragState && e.buttons === 0) onPointerUp(e); });
-
-toolButtons.forEach(btn => btn.addEventListener('click', () => {
-  currentTool = btn.dataset.tool;
-  updateToolButtons();
-  if (currentTool === 'castle') nextName.value = nextAutoName();
-  else if (currentTool === 'banner') nextName.value = 'STD';
-  else if (currentTool === 'hq') nextName.value = 'HQ';
-  else nextName.value = 'BT';
+document.querySelectorAll('.type-btn').forEach(btn => btn.addEventListener('click', () => {
+  activeType = btn.dataset.type;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b === btn));
+  nextName.value = defaultNameFor(activeType);
+  redraw(false);
 }));
-
-toggleAddBtn.addEventListener('click', () => {
-  addMode = !addMode;
-  updateToolButtons();
-});
-
+moveBtn.addEventListener('click', startMove);
+deleteBtn.addEventListener('click', deleteSelected);
+cancelMoveBtn.addEventListener('click', () => { clearSelection(); cancelMove(); redraw(false); });
+clearAllBtn.addEventListener('click', () => { if (DEMO_MODE) { state = normalize(DEMO_STATE); redraw(true); setStatus('Preview ripristinata.'); return; } state.slots = []; clearSelection(); cancelMove(); nextName.value = defaultNameFor(activeType); markDirty(); redraw(false); });
+reloadBtn.addEventListener('click', () => loadFromServer(true));
 saveNowBtn.addEventListener('click', apiSave);
-reloadBtn.addEventListener('click', () => loadFromServer(false));
-exportBtn.addEventListener('click', () => {
-  jsonBox.value = JSON.stringify({ items: state.items, updatedAt: state.updatedAt }, null, 2);
-});
-clearAllBtn.addEventListener('click', () => {
-  state.items = [];
-  selectedId = null;
-  dirty = true;
-  nextName.value = 'C01';
-  redraw();
-  setStatus('Mappa svuotata localmente. Premi Salva online per confermare.');
-});
-
-setInterval(() => {
-  if (!dirty && !dragState) loadFromServer(true);
-}, AUTO_REFRESH_MS);
-
-updateToolButtons();
-nextName.value = 'C01';
-loadFromServer(false);
-redraw();
+document.getElementById('exportJson').addEventListener('click', () => { jsonBox.value = JSON.stringify(state, null, 2); });
+selectedName.addEventListener('input', e => { const s = getSelected(); if (!s) return; s.name = e.target.value.slice(0,16); markDirty(); redraw(false); });
+window.addEventListener('resize', () => setTimeout(centerView, 60));
+if (!DEMO_MODE) setInterval(() => { if (!dirty) loadFromServer(false); }, 5000);
+nextName.value = defaultNameFor(activeType);
+loadFromServer(true);
 </script>
 </body>
 </html>
