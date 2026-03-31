@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kingshot Planner Shared V2</title>
+<style>
+  :root {
+    --bg:#0b1020;
+    --panel:#10192f;
+    --panel-2:#13213c;
+    --text:#edf2ff;
+    --muted:#b5c1da;
+    --line:rgba(255,255,255,.12);
+    --accent:#62d7d3;
+    --danger:#ff7b92;
+    --success:#6fd37c;
+    --shadow:0 20px 40px rgba(0,0,0,.28);
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; min-height:100%; }
+  body {
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    color: var(--text);
+    background: linear-gradient(180deg, #0b1020 0%, #111a31 100%);
+  }
+  button, input, select, textarea {
+    font: inherit;
+    color: inherit;
+  }
+  .app {
+    min-height:100vh;
+    display:grid;
+    grid-template-columns: 360px 1fr;
+    gap:16px;
+    padding:16px;
+  }
+  .panel {
+    background: rgba(16,25,47,.95);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:16px;
+    box-shadow: var(--shadow);
+  }
+  .map-wrap {
+    background: rgba(16,25,47,.66);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:16px;
+    overflow:auto;
+    box-shadow: var(--shadow);
+  }
+  h1 { margin:0 0 8px; font-size:24px; }
+  h2 { margin:18px 0 8px; font-size:14px; color:#cbd7f2; text-transform:uppercase; letter-spacing:.08em; }
+  p { margin:0 0 10px; color:#dee7fb; line-height:1.45; }
+  .muted, .status, .hint { color:var(--muted); font-size:13px; }
+  .status { min-height:18px; margin-top:12px; }
+  .hint { margin-top:12px; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .tool-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+  .stack { display:grid; gap:8px; }
+  input, select, textarea, button {
+    width:100%;
+    padding:11px 12px;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,.14);
+    background:#0f172a;
+  }
+  textarea { min-height:120px; resize:vertical; }
+  button { cursor:pointer; background:#12203a; }
+  button:hover { background:#183055; }
+  button.active {
+    background: linear-gradient(180deg,#2a87ff 0%, #215fd7 100%);
+    border-color: rgba(255,255,255,.24);
+  }
+  button.secondary { background:#17253f; }
+  button.danger { background:#3a1623; border-color:rgba(255,123,146,.35); }
+  button.ghost { background:transparent; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .legend { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+  .legend-item { display:flex; align-items:center; gap:8px; font-size:13px; color:#dce6fb; }
+  .swatch { width:14px; height:14px; border-radius:50%; border:1px solid rgba(255,255,255,.18); }
+  .board {
+    position:relative;
+    width:1110px;
+    height:1110px;
+    margin:0 auto;
+    border-radius:22px;
+    background:
+      linear-gradient(180deg,#8174dc 0%,#6a5dc7 100%);
+    overflow:hidden;
+  }
+  .board::before {
+    content:'';
+    position:absolute;
+    inset:0;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,.14) 0, rgba(255,255,255,.14) 1px, transparent 1px, transparent 24px),
+      linear-gradient(45deg, rgba(255,255,255,.10) 0, rgba(255,255,255,.10) 1px, transparent 1px, transparent 24px);
+    background-size: 24px 24px;
+    opacity:.45;
+    pointer-events:none;
+  }
+  svg.grid {
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+  }
+  .items, .labels {
+    position:absolute;
+    inset:0;
+  }
+  .anchor {
+    position:absolute;
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    background:rgba(255,255,255,.28);
+    border:1px solid rgba(255,255,255,.28);
+    box-shadow:0 0 0 1px rgba(0,0,0,.08) inset;
+    cursor:pointer;
+  }
+  .anchor:hover { transform:translate(-50%,-50%) scale(1.2); }
+  .item {
+    position:absolute;
+    transform: translate(-50%, -50%);
+    user-select:none;
+    touch-action:none;
+    cursor:grab;
+    display:grid;
+    place-items:center;
+    filter: drop-shadow(0 8px 14px rgba(0,0,0,.28));
+  }
+  .item.dragging { cursor:grabbing; z-index:200; }
+  .item.selected { z-index:180; }
+  .item .name-pill {
+    position:absolute;
+    left:50%;
+    top:100%;
+    transform:translate(-50%, 6px);
+    min-width:34px;
+    max-width:92px;
+    padding:3px 7px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,.16);
+    background:rgba(15,23,42,.76);
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:.02em;
+    text-align:center;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .castle {
+    width:38px;
+    height:38px;
+  }
+  .castle svg { width:100%; height:100%; overflow:visible; }
+  .banner {
+    width:58px;
+    height:auto;
+  }
+  .hq {
+    width:96px;
+    height:auto;
+  }
+  .beartrap {
+    width:42px;
+    height:42px;
+  }
+  .selection-ring {
+    position:absolute;
+    inset:-8px;
+    border:2px solid rgba(255,255,255,.92);
+    border-radius:18px;
+    pointer-events:none;
+    box-shadow:0 0 0 4px rgba(34,197,94,.18);
+  }
+  .selection-ring.round { border-radius:999px; }
+  .inspector {
+    display:grid;
+    gap:8px;
+    padding:12px;
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:14px;
+    background:rgba(255,255,255,.03);
+  }
+  .small { font-size:12px; color:var(--muted); }
+  .pillbar { display:flex; gap:8px; flex-wrap:wrap; }
+  .pill {
+    padding:6px 10px;
+    border-radius:999px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.12);
+    font-size:12px;
+  }
+  @media (max-width: 980px) {
+    .app { grid-template-columns:1fr; }
+    .panel { order:2; }
+    .map-wrap { order:1; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="panel">
+    <h1>Kingshot Planner Shared V2</h1>
+    <p>Versione nuova separata dalla mappa attuale. Castelli, stendardi, HQ e Bear Trap sono oggetti indipendenti, trascinabili e salvati online.</p>
+    <p class="muted">Flusso consigliato: scegli il tipo oggetto, clicca sulla griglia per aggiungerlo, poi trascinalo dove vuoi. Ogni oggetto resta legato alla casella più vicina ma puoi rifinirne la posizione con un offset libero.</p>
+
+    <h2>Accesso</h2>
+    <div class="stack">
+      <input id="editorKey" type="password" placeholder="Editor key opzionale" />
+    </div>
+
+    <h2>Nuovo oggetto</h2>
+    <div class="tool-grid" id="toolButtons">
+      <button data-tool="castle" class="active">Castello</button>
+      <button data-tool="banner">Stendardo</button>
+      <button data-tool="hq">HQ</button>
+      <button data-tool="beartrap">Bear Trap</button>
+    </div>
+
+    <div class="stack" style="margin-top:8px;">
+      <div class="row">
+        <input id="nextName" type="text" maxlength="14" placeholder="Nome / etichetta" value="C01" />
+        <select id="nextColor">
+          <option value="cyan">Ciano</option>
+          <option value="green">Verde</option>
+          <option value="pink">Rosa</option>
+          <option value="orange">Arancio</option>
+          <option value="purple">Viola</option>
+        </select>
+      </div>
+      <button id="toggleAdd" class="secondary">Modalità aggiunta: attiva</button>
+    </div>
+
+    <h2>Oggetto selezionato</h2>
+    <div class="inspector">
+      <div class="small" id="selectedType">Nessun oggetto selezionato.</div>
+      <input id="selectedName" type="text" maxlength="14" placeholder="Nome selezionato" disabled />
+      <select id="selectedColor" disabled>
+        <option value="cyan">Ciano</option>
+        <option value="green">Verde</option>
+        <option value="pink">Rosa</option>
+        <option value="orange">Arancio</option>
+        <option value="purple">Viola</option>
+      </select>
+      <div class="row">
+        <button id="resetOffset" class="ghost" disabled>Reset offset</button>
+        <button id="deleteSelected" class="danger" disabled>Cancella</button>
+      </div>
+    </div>
+
+    <h2>Legenda</h2>
+    <div class="legend">
+      <div class="legend-item"><span class="swatch" style="background:#5ad6d1"></span>Castelli clan</div>
+      <div class="legend-item"><span class="swatch" style="background:#89d64e"></span>Linea / supporto</div>
+      <div class="legend-item"><span class="swatch" style="background:#ff92ca"></span>Rally</div>
+      <div class="legend-item"><span class="swatch" style="background:#f6b24a"></span>Marker speciali</div>
+    </div>
+
+    <h2>Azioni</h2>
+    <div class="stack">
+      <button id="saveNow">Salva online</button>
+      <button id="reloadBtn" class="secondary">Ricarica dal server</button>
+      <button id="exportJson" class="secondary">Esporta JSON</button>
+      <button id="clearAll" class="danger">Svuota mappa</button>
+      <textarea id="jsonBox" placeholder="Export JSON"></textarea>
+    </div>
+
+    <div class="status" id="status"></div>
+    <div class="hint">Tip: puoi mettere più elementi nella stessa zona, trascinarli e poi usare Reset offset se vuoi riallinearli al centro della casella.</div>
+  </aside>
+
+  <main class="map-wrap">
+    <div class="board" id="board">
+      <svg class="grid" id="grid" viewBox="0 0 1110 1110" aria-label="Mappa Kingshot"></svg>
+      <div class="items" id="items"></div>
+      <div class="labels" id="anchors"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+const UNIT = 30;
+const HALF = UNIT / 2;
+const OFF_X = 555;
+const OFF_Y = 105;
+const GRID_MIN = 0;
+const GRID_MAX = 30;
+const AUTO_REFRESH_MS = 5000;
+const palette = { cyan:'#5ad6d1', green:'#89d64e', pink:'#ff92ca', orange:'#f6b24a', purple:'#a98bf6' };
+const typeMeta = {
+  castle: { label:'Castello', size:38, defaultName:'C', layer:20 },
+  banner: { label:'Stendardo', size:58, defaultName:'STD', layer:10 },
+  hq: { label:'HQ', size:96, defaultName:'HQ', layer:30 },
+  beartrap: { label:'Bear Trap', size:42, defaultName:'BT', layer:25 }
+};
+
+const board = document.getElementById('board');
+const grid = document.getElementById('grid');
+const itemsLayer = document.getElementById('items');
+const anchorsLayer = document.getElementById('anchors');
+const editorKey = document.getElementById('editorKey');
+const nextName = document.getElementById('nextName');
+const nextColor = document.getElementById('nextColor');
+const jsonBox = document.getElementById('jsonBox');
+const statusBox = document.getElementById('status');
+const toolButtons = [...document.querySelectorAll('[data-tool]')];
+const toggleAddBtn = document.getElementById('toggleAdd');
+const selectedTypeBox = document.getElementById('selectedType');
+const selectedNameInput = document.getElementById('selectedName');
+const selectedColorSelect = document.getElementById('selectedColor');
+const resetOffsetBtn = document.getElementById('resetOffset');
+const deleteSelectedBtn = document.getElementById('deleteSelected');
+const saveNowBtn = document.getElementById('saveNow');
+const reloadBtn = document.getElementById('reloadBtn');
+const exportBtn = document.getElementById('exportJson');
+const clearAllBtn = document.getElementById('clearAll');
+
+let state = { items: [], updatedAt: null };
+let selectedId = null;
+let currentTool = 'castle';
+let addMode = true;
+let dirty = false;
+let isSaving = false;
+let dragState = null;
+let lastLoadedAt = null;
+
+function setStatus(text='') { statusBox.textContent = text; }
+function markDirty() { dirty = true; }
+function uid() { return Date.now() + Math.floor(Math.random() * 100000); }
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function project(gx, gy) { return { x:(gx - gy) * HALF + OFF_X, y:(gx + gy) * HALF + OFF_Y }; }
+function inverse(px, py) {
+  const a = (px - OFF_X) / HALF;
+  const b = (py - OFF_Y) / HALF;
+  return { gx:(a + b) / 2, gy:(b - a) / 2 };
+}
+function nearestCell(px, py) {
+  const inv = inverse(px, py);
+  return { gx: clamp(Math.round(inv.gx), GRID_MIN, GRID_MAX), gy: clamp(Math.round(inv.gy), GRID_MIN, GRID_MAX) };
+}
+function getItem(id = selectedId) { return state.items.find(item => item.id === id) || null; }
+function normalize(remote) {
+  if (!remote || typeof remote !== 'object') return { items: [], updatedAt: null };
+  if (Array.isArray(remote.items)) {
+    return {
+      items: remote.items.map(item => ({
+        id: item.id || uid(),
+        type: typeMeta[item.type] ? item.type : 'castle',
+        gx: clamp(Number.isFinite(item.gx) ? item.gx : 15, GRID_MIN, GRID_MAX),
+        gy: clamp(Number.isFinite(item.gy) ? item.gy : 15, GRID_MIN, GRID_MAX),
+        offsetX: Number.isFinite(item.offsetX) ? item.offsetX : 0,
+        offsetY: Number.isFinite(item.offsetY) ? item.offsetY : 0,
+        name: (item.name || '').toString().slice(0, 14),
+        color: palette[item.color] ? item.color : 'cyan'
+      })),
+      updatedAt: remote.updatedAt || null
+    };
+  }
+  return { items: [], updatedAt: remote.updatedAt || null };
+}
+function nextAutoName() {
+  const castles = state.items.filter(item => item.type === 'castle').length + 1;
+  return `C${String(castles).padStart(2, '0')}`;
+}
+function cellCenter(item) {
+  const p = project(item.gx, item.gy);
+  return { x: p.x + item.offsetX, y: p.y + item.offsetY };
+}
+function itemLabel(item) {
+  if (item.name && item.name.trim()) return item.name.trim();
+  return typeMeta[item.type]?.defaultName || item.type;
+}
+
+async function apiLoad() {
+  const res = await fetch('/.netlify/functions/layout');
+  if (!res.ok) throw new Error('Errore lettura server');
+  return normalize(await res.json());
+}
+async function apiSave() {
+  if (isSaving) return;
+  isSaving = true;
+  try {
+    const payload = { items: state.items, updatedAt: state.updatedAt };
+    const res = await fetch('/.netlify/functions/layout', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-editor-key': editorKey.value || '' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Errore salvataggio');
+    state = normalize(data);
+    dirty = false;
+    lastLoadedAt = state.updatedAt;
+    setStatus('Salvato online.');
+    if (currentTool === 'castle') nextName.value = nextAutoName();
+    redraw();
+  } catch (err) {
+    setStatus(err.message || 'Errore salvataggio');
+  } finally {
+    isSaving = false;
+  }
+}
+async function loadFromServer(silent = false) {
+  try {
+    const remote = await apiLoad();
+    if (!dirty || remote.updatedAt !== state.updatedAt) {
+      state = remote;
+      lastLoadedAt = remote.updatedAt;
+      if (currentTool === 'castle') nextName.value = nextAutoName();
+      if (!silent) setStatus(remote.updatedAt ? `Mappa aggiornata: ${new Date(remote.updatedAt).toLocaleString('it-IT')}` : 'Mappa caricata dal server.');
+      redraw();
+    }
+  } catch (err) {
+    if (!silent) setStatus('Errore nel caricamento dal server.');
+  }
+}
+
+function updateToolButtons() {
+  toolButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.tool === currentTool));
+  toggleAddBtn.textContent = `Modalità aggiunta: ${addMode ? 'attiva' : 'disattiva'}`;
+}
+function updateInspector() {
+  const item = getItem();
+  if (!item) {
+    selectedTypeBox.textContent = 'Nessun oggetto selezionato.';
+    selectedNameInput.value = '';
+    selectedColorSelect.value = 'cyan';
+    selectedNameInput.disabled = true;
+    selectedColorSelect.disabled = true;
+    resetOffsetBtn.disabled = true;
+    deleteSelectedBtn.disabled = true;
+    return;
+  }
+  selectedTypeBox.textContent = `${typeMeta[item.type].label} · cella ${item.gx},${item.gy} · offset ${Math.round(item.offsetX)}, ${Math.round(item.offsetY)}`;
+  selectedNameInput.value = item.name || '';
+  selectedColorSelect.value = item.color || 'cyan';
+  selectedNameInput.disabled = false;
+  selectedColorSelect.disabled = item.type === 'beartrap';
+  resetOffsetBtn.disabled = false;
+  deleteSelectedBtn.disabled = false;
+}
+function selectItem(id) {
+  selectedId = id;
+  redraw();
+}
+function clearSelection() {
+  selectedId = null;
+  redraw();
+}
+
+function createCastleSVG(color) {
+  return `
+  <svg viewBox="0 0 64 64" aria-hidden="true">
+    <defs>
+      <linearGradient id="fill-${color}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}"/>
+        <stop offset="100%" stop-color="#16325a"/>
+      </linearGradient>
+    </defs>
+    <path d="M32 4 58 20 32 36 6 20 32 4Z" fill="url(#fill-${color})" opacity=".38"/>
+    <path d="M16 20h32v18H16z" fill="${color}" stroke="rgba(7,16,32,.75)" stroke-width="2" rx="3"/>
+    <path d="M20 16h6v6h-6zM29 16h6v6h-6zM38 16h6v6h-6z" fill="#dbeafe" opacity=".9"/>
+    <path d="M28 24h8v14h-8z" fill="#0f172a" opacity=".65"/>
+    <path d="M16 38h32l-4 10H20l-4-10Z" fill="#23375d" opacity=".92"/>
+    <path d="M18 22h28" stroke="rgba(255,255,255,.36)" stroke-width="2"/>
+  </svg>`;
+}
+function createBearTrapSVG() {
+  return `
+  <svg viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="32" cy="32" r="27" fill="#101827" stroke="#f6b24a" stroke-width="4"/>
+    <path d="M18 32c4-12 24-12 28 0" stroke="#f6b24a" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M18 34c4 12 24 12 28 0" stroke="#f6b24a" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <circle cx="32" cy="32" r="6" fill="#f6b24a"/>
+  </svg>`;
+}
+function createItemElement(item) {
+  const el = document.createElement('div');
+  el.className = `item ${item.type}` + (item.id === selectedId ? ' selected' : '');
+  const center = cellCenter(item);
+  el.style.left = `${center.x}px`;
+  el.style.top = `${center.y}px`;
+  el.style.zIndex = String((typeMeta[item.type]?.layer || 20) + (item.id === selectedId ? 100 : 0));
+  el.dataset.id = item.id;
+
+  if (item.type === 'castle') {
+    el.innerHTML = createCastleSVG(palette[item.color] || palette.cyan);
+  } else if (item.type === 'banner') {
+    const img = document.createElement('img');
+    img.src = './assets/banner.png';
+    img.alt = 'Stendardo';
+    img.className = 'banner';
+    img.draggable = false;
+    el.appendChild(img);
+  } else if (item.type === 'hq') {
+    const img = document.createElement('img');
+    img.src = './assets/hq.png';
+    img.alt = 'HQ';
+    img.className = 'hq';
+    img.draggable = false;
+    el.appendChild(img);
+  } else {
+    el.innerHTML = createBearTrapSVG();
+  }
+
+  const label = document.createElement('div');
+  label.className = 'name-pill';
+  label.textContent = itemLabel(item);
+  el.appendChild(label);
+
+  const ring = document.createElement('div');
+  ring.className = 'selection-ring' + ((item.type === 'banner' || item.type === 'beartrap') ? ' round' : '');
+  ring.style.display = item.id === selectedId ? 'block' : 'none';
+  el.appendChild(ring);
+
+  el.addEventListener('pointerdown', onItemPointerDown);
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!dragState) selectItem(item.id);
+  });
+  return el;
+}
+function renderItems() {
+  itemsLayer.innerHTML = '';
+  [...state.items].sort((a,b) => (typeMeta[a.type].layer - typeMeta[b.type].layer)).forEach(item => itemsLayer.appendChild(createItemElement(item)));
+}
+function renderGrid() {
+  grid.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const g = document.createElementNS(ns, 'g');
+  for (let gy = GRID_MIN; gy <= GRID_MAX; gy++) {
+    for (let gx = GRID_MIN; gx <= GRID_MAX; gx++) {
+      const p = project(gx, gy);
+      const poly = document.createElementNS(ns, 'polygon');
+      poly.setAttribute('points', `${p.x},${p.y - HALF} ${p.x + HALF},${p.y} ${p.x},${p.y + HALF} ${p.x - HALF},${p.y}`);
+      poly.setAttribute('fill', 'rgba(255,255,255,.05)');
+      poly.setAttribute('stroke', 'rgba(255,255,255,.12)');
+      poly.setAttribute('stroke-width', '.9');
+      g.appendChild(poly);
+    }
+  }
+  grid.appendChild(g);
+}
+function renderAnchors() {
+  anchorsLayer.innerHTML = '';
+  for (let gy = GRID_MIN; gy <= GRID_MAX; gy++) {
+    for (let gx = GRID_MIN; gx <= GRID_MAX; gx++) {
+      const p = project(gx, gy);
+      const dot = document.createElement('button');
+      dot.className = 'anchor';
+      dot.style.left = `${p.x}px`;
+      dot.style.top = `${p.y}px`;
+      dot.title = `Aggiungi su ${gx},${gy}`;
+      dot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!addMode) return;
+        addItemAt(gx, gy);
+      });
+      anchorsLayer.appendChild(dot);
+    }
+  }
+}
+function redraw() {
+  renderGrid();
+  renderAnchors();
+  renderItems();
+  updateInspector();
+}
+
+function createNewItem(gx, gy) {
+  const type = currentTool;
+  const baseName = (nextName.value || '').trim().slice(0, 14);
+  let name = '';
+  if (type === 'castle') name = baseName || nextAutoName();
+  if (type === 'banner') name = baseName || 'STD';
+  if (type === 'hq') name = baseName || 'HQ';
+  if (type === 'beartrap') name = baseName || 'BT';
+  return {
+    id: uid(),
+    type,
+    gx,
+    gy,
+    offsetX: 0,
+    offsetY: 0,
+    name,
+    color: nextColor.value || 'cyan'
+  };
+}
+function addItemAt(gx, gy) {
+  const item = createNewItem(gx, gy);
+  state.items.push(item);
+  markDirty();
+  selectItem(item.id);
+  if (currentTool === 'castle') nextName.value = nextAutoName();
+  setStatus(`${typeMeta[item.type].label} aggiunto in ${gx},${gy}.`);
+}
+
+function boardPointFromEvent(e) {
+  const rect = board.getBoundingClientRect();
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+function onItemPointerDown(e) {
+  e.stopPropagation();
+  const id = Number(e.currentTarget.dataset.id);
+  const item = getItem(id);
+  if (!item) return;
+  selectItem(id);
+  const pos = boardPointFromEvent(e);
+  const center = cellCenter(item);
+  dragState = {
+    id,
+    pointerOffsetX: pos.x - center.x,
+    pointerOffsetY: pos.y - center.y,
+    moved: false
+  };
+  e.currentTarget.classList.add('dragging');
+  e.currentTarget.setPointerCapture(e.pointerId);
+}
+function onPointerMove(e) {
+  if (!dragState) return;
+  const item = getItem(dragState.id);
+  if (!item) return;
+  const point = boardPointFromEvent(e);
+  const targetX = clamp(point.x - dragState.pointerOffsetX, 20, 1090);
+  const targetY = clamp(point.y - dragState.pointerOffsetY, 20, 1090);
+  const cell = nearestCell(targetX, targetY);
+  const anchor = project(cell.gx, cell.gy);
+  item.gx = cell.gx;
+  item.gy = cell.gy;
+  item.offsetX = clamp(targetX - anchor.x, -26, 26);
+  item.offsetY = clamp(targetY - anchor.y, -26, 26);
+  dragState.moved = true;
+  markDirty();
+  redraw();
+}
+function onPointerUp(e) {
+  if (!dragState) return;
+  const el = itemsLayer.querySelector(`[data-id="${dragState.id}"]`);
+  if (el) el.classList.remove('dragging');
+  const item = getItem(dragState.id);
+  if (item && dragState.moved) {
+    setStatus(`${typeMeta[item.type].label} spostato in ${item.gx},${item.gy}.`);
+  }
+  dragState = null;
+  redraw();
+}
+
+selectedNameInput.addEventListener('input', (e) => {
+  const item = getItem();
+  if (!item) return;
+  item.name = e.target.value.slice(0, 14);
+  markDirty();
+  redraw();
+});
+selectedColorSelect.addEventListener('change', (e) => {
+  const item = getItem();
+  if (!item) return;
+  item.color = e.target.value;
+  markDirty();
+  redraw();
+});
+resetOffsetBtn.addEventListener('click', () => {
+  const item = getItem();
+  if (!item) return;
+  item.offsetX = 0;
+  item.offsetY = 0;
+  markDirty();
+  redraw();
+});
+deleteSelectedBtn.addEventListener('click', () => {
+  if (!selectedId) return;
+  state.items = state.items.filter(item => item.id !== selectedId);
+  selectedId = null;
+  markDirty();
+  redraw();
+});
+
+board.addEventListener('click', (e) => {
+  if (e.target !== board && e.target !== itemsLayer && e.target !== grid) return;
+  const point = boardPointFromEvent(e);
+  const cell = nearestCell(point.x, point.y);
+  if (addMode) {
+    addItemAt(cell.gx, cell.gy);
+  } else {
+    clearSelection();
+  }
+});
+board.addEventListener('pointermove', onPointerMove);
+board.addEventListener('pointerup', onPointerUp);
+board.addEventListener('pointercancel', onPointerUp);
+board.addEventListener('pointerleave', (e) => { if (dragState && e.buttons === 0) onPointerUp(e); });
+
+toolButtons.forEach(btn => btn.addEventListener('click', () => {
+  currentTool = btn.dataset.tool;
+  updateToolButtons();
+  if (currentTool === 'castle') nextName.value = nextAutoName();
+  else if (currentTool === 'banner') nextName.value = 'STD';
+  else if (currentTool === 'hq') nextName.value = 'HQ';
+  else nextName.value = 'BT';
+}));
+
+toggleAddBtn.addEventListener('click', () => {
+  addMode = !addMode;
+  updateToolButtons();
+});
+
+saveNowBtn.addEventListener('click', apiSave);
+reloadBtn.addEventListener('click', () => loadFromServer(false));
+exportBtn.addEventListener('click', () => {
+  jsonBox.value = JSON.stringify({ items: state.items, updatedAt: state.updatedAt }, null, 2);
+});
+clearAllBtn.addEventListener('click', () => {
+  state.items = [];
+  selectedId = null;
+  dirty = true;
+  nextName.value = 'C01';
+  redraw();
+  setStatus('Mappa svuotata localmente. Premi Salva online per confermare.');
+});
+
+setInterval(() => {
+  if (!dirty && !dragState) loadFromServer(true);
+}, AUTO_REFRESH_MS);
+
+updateToolButtons();
+nextName.value = 'C01';
+loadFromServer(false);
+redraw();
+</script>
+</body>
+</html>
